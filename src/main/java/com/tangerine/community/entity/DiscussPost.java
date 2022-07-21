@@ -11,23 +11,8 @@ public class DiscussPost {
     private int type;
     private int status;
     private Date createTime;
-    private int commentCnt;
+    private int commentCount;
     private double score;
-
-    @Override
-    public String toString() {
-        return "DiscussPost{" +
-                "id=" + id +
-                ", userId=" + userId +
-                ", title='" + title + '\'' +
-                ", content='" + content + '\'' +
-                ", type=" + type +
-                ", status=" + status +
-                ", createTime=" + createTime +
-                ", commentCnt=" + commentCnt +
-                ", score=" + score +
-                '}';
-    }
 
     public int getId() {
         return id;
@@ -85,12 +70,12 @@ public class DiscussPost {
         this.createTime = createTime;
     }
 
-    public int getCommentCnt() {
-        return commentCnt;
+    public int getCommentCount() {
+        return commentCount;
     }
 
-    public void setCommentCnt(int commentCnt) {
-        this.commentCnt = commentCnt;
+    public void setCommentCount(int commentCount) {
+        this.commentCount = commentCount;
     }
 
     public double getScore() {
@@ -99,5 +84,20 @@ public class DiscussPost {
 
     public void setScore(double score) {
         this.score = score;
+    }
+
+    @Override
+    public String toString() {
+        return "DiscussPost{" +
+                "id=" + id +
+                ", userId=" + userId +
+                ", title='" + title + '\'' +
+                ", content='" + content + '\'' +
+                ", type=" + type +
+                ", status=" + status +
+                ", createTime=" + createTime +
+                ", commentCount=" + commentCount +
+                ", score=" + score +
+                '}';
     }
 }
