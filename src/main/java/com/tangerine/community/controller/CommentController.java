@@ -1,7 +1,12 @@
 package com.tangerine.community.controller;
 
 import com.tangerine.community.entity.Comment;
+import com.tangerine.community.entity.DiscussPost;
+import com.tangerine.community.entity.Event;
+import com.tangerine.community.event.EventProducer;
 import com.tangerine.community.service.CommentService;
+import com.tangerine.community.service.DiscussPostService;
+import com.tangerine.community.util.CommunityConstant;
 import com.tangerine.community.util.HostHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -11,24 +16,47 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import java.util.Date;
 
-@Controller
-@RequestMapping("/comment")
-public class CommentController {
+    @Controller
+    @RequestMapping("/comment")
+    public class CommentController implements CommunityConstant {
 
-    @Autowired
-    private CommentService commentService;
+        @Autowired
+        private CommentService commentService;
 
-    @Autowired
-    private HostHolder hostHolder;
+        @Autowired
+        private HostHolder hostHolder;
 
-    @RequestMapping(path = "/add/{discussPostId}", method = RequestMethod.POST)
-    public String addComment(@PathVariable("discussPostId") int discussPostId, Comment comment) {
-        comment.setUserId(hostHolder.getUser().getId());
-        comment.setStatus(0);
-        comment.setCreateTime(new Date());
-        commentService.addComment(comment);
+        @Autowired
+        private EventProducer eventProducer;
 
-        return "redirect:/discuss/detail/" + discussPostId;
+        @Autowired
+        private DiscussPostService discussPostService;
+
+        @RequestMapping(path = "/add/{discussPostId}", method = RequestMethod.POST)
+        public String addComment(@PathVariable("discussPostId") int discussPostId, Comment comment) {
+            comment.setUserId(hostHolder.getUser().getId());
+            comment.setStatus(0);
+            comment.setCreateTime(new Date());
+            commentService.addComment(comment);
+
+            // 触发评论事件
+            Event event = new Event()
+                    .setTopic(TOPIC_COMMENT)
+                    .setUserId(hostHolder.getUser().getId())
+                    .setEntityType(comment.getEntityType())
+                    .setEntityId(comment.getEntityId())
+                    .setData("postId", discussPostId);
+            if (comment.getEntityType() == ENTITY_TYPE_POST) {
+                DiscussPost target = discussPostService.findDiscussPostById(comment.getEntityId());
+                event.setEntityUserId(target.getUserId());
+            } else if (comment.getEntityType() == ENTITY_TYPE_COMMENT) {
+                Comment target = commentService.findCommentById(comment.getEntityId());
+                event.setEntityUserId(target.getUserId());
+            }
+            eventProducer.fireEvent(event);
+
+            return "redirect:/discuss/detail/" + discussPostId;
+        }
+
     }
 
-}

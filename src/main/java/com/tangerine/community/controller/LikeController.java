@@ -1,7 +1,10 @@
 package com.tangerine.community.controller;
 
+import com.tangerine.community.entity.Event;
 import com.tangerine.community.entity.User;
+import com.tangerine.community.event.EventProducer;
 import com.tangerine.community.service.LikeService;
+import com.tangerine.community.util.CommunityConstant;
 import com.tangerine.community.util.CommunityUtil;
 import com.tangerine.community.util.HostHolder;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,36 +16,50 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @Controller
-public class LikeController {
+public class LikeController implements CommunityConstant {
 
-    @Autowired
-    private LikeService likeService;
+        @Autowired
+        private LikeService likeService;
 
-    @Autowired
-    private HostHolder hostHolder;
+        @Autowired
+        private HostHolder hostHolder;
 
-    @RequestMapping(path = "/like", method = RequestMethod.POST)
-    @ResponseBody
-    public String like(int entityType, int entityId, int entityUserId) {
-        User user = hostHolder.getUser();
+        @Autowired
+        private EventProducer eventProducer;
 
-        // 点赞
-        likeService.like(user.getId(), entityType, entityId, entityUserId);
+        @RequestMapping(path = "/like", method = RequestMethod.POST)
+        @ResponseBody
+        public String like(int entityType, int entityId, int entityUserId, int postId) {
+            User user = hostHolder.getUser();
 
-        // 数量
-        long likeCount = likeService.findEntityLikeCount(entityType, entityId);
-        // 状态
-        int likeStatus = likeService.findEntityLikeStatus(user.getId(), entityType, entityId);
-        // 返回的结果
-        Map<String, Object> map = new HashMap<>();
-        map.put("likeCount", likeCount);
-        map.put("likeStatus", likeStatus);
+            // 点赞
+            likeService.like(user.getId(), entityType, entityId, entityUserId);
 
-        return CommunityUtil.getJSONString(0, null, map);
+            // 数量
+            long likeCount = likeService.findEntityLikeCount(entityType, entityId);
+            // 状态
+            int likeStatus = likeService.findEntityLikeStatus(user.getId(), entityType, entityId);
+            // 返回的结果
+            Map<String, Object> map = new HashMap<>();
+            map.put("likeCount", likeCount);
+            map.put("likeStatus", likeStatus);
+
+            // 触发点赞事件
+            if (likeStatus == 1) {
+                Event event = new Event()
+                        .setTopic(TOPIC_LIKE)
+                        .setUserId(hostHolder.getUser().getId())
+                        .setEntityType(entityType)
+                        .setEntityId(entityId)
+                        .setEntityUserId(entityUserId)
+                        .setData("postId", postId);
+                eventProducer.fireEvent(event);
+            }
+
+            return CommunityUtil.getJSONString(0, null, map);
+        }
+
     }
-
-}
 
 
